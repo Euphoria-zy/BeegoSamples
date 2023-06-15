@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/gorilla/websocket"
 	"github.com/beego/samples/WebIM/models"
+	"github.com/gorilla/websocket"
 )
 
 type Subscription struct {
@@ -47,45 +47,45 @@ type Subscriber struct {
 
 var (
 	// Channel for new join users.
-	subscribe = make(chan Subscriber, 10)
+	subscribe = make(chan Subscriber, 10) //订阅通道，加入聊天室的用户
 	// Channel for exit users.
-	unsubscribe = make(chan string, 10)
+	unsubscribe = make(chan string, 10) //离开的用户：用户名
 	// Send events here to publish them.
-	publish = make(chan models.Event, 10)
+	publish = make(chan models.Event, 10) //发送消息的通道
 	// Long polling waiting list.
-	waitingList = list.New()
+	waitingList = list.New() //链表
 	subscribers = list.New()
 )
 
-// This function handles all incoming chan messages.
+// This function handles all incoming chan messages.处理所有的消息
 func chatroom() {
 	for {
 		select {
 		case sub := <-subscribe:
 			if !isUserExist(subscribers, sub.Name) {
-				subscribers.PushBack(sub) // Add user to the end of list.
+				subscribers.PushBack(sub) // Add user to the end of list.订阅者队列
 				// Publish a JOIN event.
-				publish <- newEvent(models.EVENT_JOIN, sub.Name, "")
-				beego.Info("New user:", sub.Name, ";WebSocket:", sub.Conn != nil)
+				publish <- newEvent(models.EVENT_JOIN, sub.Name, "")              //新加入的用户，发送新用户加入的系统消息
+				beego.Info("New user:", sub.Name, ";WebSocket:", sub.Conn != nil) //打印log
 			} else {
 				beego.Info("Old user:", sub.Name, ";WebSocket:", sub.Conn != nil)
 			}
-		case event := <-publish:
-			// Notify waiting list.
-			for ch := waitingList.Back(); ch != nil; ch = ch.Prev() {
-				ch.Value.(chan bool) <- true
+		case event := <-publish: //如果有需要发送的消息
+			// Notify waiting list.清空等待队列
+			for ch := waitingList.Back(); ch != nil; ch = ch.Prev() { //List.Back()：取出队尾节点;List.Prev()：取出上一个节点
+				ch.Value.(chan bool) <- true //元素类型为bool 类型的chan
 				waitingList.Remove(ch)
 			}
 
-			broadcastWebSocket(event)
-			models.NewArchive(event)
+			broadcastWebSocket(event) //websocket 发送消息
+			models.NewArchive(event)  //longpooling发送消息
 
 			if event.Type == models.EVENT_MESSAGE {
 				beego.Info("Message from", event.User, ";Content:", event.Content)
 			}
-		case unsub := <-unsubscribe:
+		case unsub := <-unsubscribe: //如果有用户退出
 			for sub := subscribers.Front(); sub != nil; sub = sub.Next() {
-				if sub.Value.(Subscriber).Name == unsub {
+				if sub.Value.(Subscriber).Name == unsub { //list.element.value是接口类型interface{},通过Value.(类型)可转化为指定类型
 					subscribers.Remove(sub)
 					// Clone connection.
 					ws := sub.Value.(Subscriber).Conn
@@ -101,13 +101,15 @@ func chatroom() {
 	}
 }
 
+// 在导入包的时候执行
 func init() {
-	go chatroom()
+	go chatroom() //开启一个聊天室线程
 }
 
+// 判断是否为新加入聊天室的用户
 func isUserExist(subscribers *list.List, user string) bool {
 	for sub := subscribers.Front(); sub != nil; sub = sub.Next() {
-		if sub.Value.(Subscriber).Name == user {
+		if sub.Value.(Subscriber).Name == user { //如果user和队首元素一致，则为新加入的用户
 			return true
 		}
 	}

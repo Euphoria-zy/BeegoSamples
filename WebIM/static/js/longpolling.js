@@ -1,8 +1,8 @@
 var lastReceived = 0;
-var isWait = false;
+var isWait = false;   //是否等待服务端的响应
 
 var fetch = function () {
-    if (isWait) return;
+    if (isWait) return;     //如果上一次的请求没有得到响应，就一直保持长连接，直到收到服务端响应
     isWait = true;
     $.getJSON("/lp/fetch?lastReceived=" + lastReceived, function (data) {
         if (data == null) return;
@@ -34,18 +34,18 @@ var fetch = function () {
                 break;
             }
 
-            $('#chatbox li').first().before(li);
+            $('#chatbox li').first().before(li);  //将新的消息的li添加到已有的li前面
 
             lastReceived = event.Timestamp;
         });
-        isWait = false;
+        isWait = false;  //本次响应结束，可进行下次连接请求
     });
 }
 
 // Call fetch every 3 seconds
 setInterval(fetch, 3000);
 
-fetch();
+fetch();   //同步消息
 
 $(document).ready(function () {
 

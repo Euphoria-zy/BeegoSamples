@@ -40,7 +40,7 @@ func (this *LongPollingController) Join() {
 	this.Data["UserName"] = uname
 }
 
-// Post method handles receive messages requests for LongPollingController.
+// Post method handles receive messages requests for LongPollingController.发送消息，将发送消息的事件发送到publish chan
 func (this *LongPollingController) Post() {
 	this.TplName = "longpolling.html"
 
@@ -67,10 +67,10 @@ func (this *LongPollingController) Fetch() {
 		return
 	}
 
-	// Wait for new message(s).
+	// Wait for new message(s).   //如果没有新消息，就阻塞等待队列，直到有新的消息发布;避免客户端一直fetch，减轻服务端压力
 	ch := make(chan bool)
 	waitingList.PushBack(ch)
-	<-ch
+	<-ch //从通道接收值，当前进程死锁；只有当存在一个发送值操作才能继续执行后续操作
 
 	this.Data["json"] = models.GetEvents(int(lastReceived))
 	this.ServeJSON()

@@ -87,7 +87,7 @@ func (this *AppController) Join() {
 
 	// Check valid.
 	if len(uname) == 0 {
-		this.Redirect("/", 302)
+		this.Redirect("/", 302) //重定向状态码
 		return
 	}
 

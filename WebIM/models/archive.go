@@ -21,9 +21,9 @@ import (
 type EventType int
 
 const (
-	EVENT_JOIN = iota
-	EVENT_LEAVE
-	EVENT_MESSAGE
+	EVENT_JOIN    = iota //加入聊天室
+	EVENT_LEAVE          //离开聊天室
+	EVENT_MESSAGE        //聊天
 )
 
 type Event struct {
@@ -41,17 +41,17 @@ var archive = list.New()
 // NewArchive saves new event to archive list.
 func NewArchive(event Event) {
 	if archive.Len() >= archiveSize {
-		archive.Remove(archive.Front())
+		archive.Remove(archive.Front()) //移除队首元素
 	}
-	archive.PushBack(event)
+	archive.PushBack(event) //将新的event存到队尾
 }
 
 // GetEvents returns all events after lastReceived.
 func GetEvents(lastReceived int) []Event {
-	events := make([]Event, 0, archive.Len())
+	events := make([]Event, 0, archive.Len()) //分配数组长度为当前事件队列的长度
 	for event := archive.Front(); event != nil; event = event.Next() {
 		e := event.Value.(Event)
-		if e.Timestamp > int(lastReceived) {
+		if e.Timestamp > int(lastReceived) { //返回上次收到消息之后的消息
 			events = append(events, e)
 		}
 	}
